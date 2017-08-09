@@ -71,7 +71,7 @@ class CrossValidationResults(object):
         subsets = []
         keys = list(data.keys())
         samples_per_fold = len(data) / self.num_folds
-        for i in xrange(self.num_folds):
+        for i in range(self.num_folds):
             # Get the number of samples for this fold
             num_samples = samples_per_fold + 1 if i < len(data) % self.num_folds else samples_per_fold
 
@@ -94,7 +94,7 @@ class CrossValidationResults(object):
             for j,fold in enumerate(subsets):
                 if i == j:
                     continue
-                for key, value in fold.iteritems():
+                for key, value in fold.items():
                     training[key] = value
             folds.append((training, testing))
 
@@ -140,7 +140,7 @@ def weighted_regression_variance(x, y, weights, coefficients):
     '''Calculate the variance of a regression model where each observation is weighted.'''
     # TODO: Vectorize
     result = 0.
-    for i in xrange(len(y)):
+    for i in range(len(y)):
         result += weights[i] * (y[i] - x[i].T.dot(coefficients)) ** 2
     return result / weights.sum()
 
@@ -202,12 +202,12 @@ def maximum_likelihood_parameters(data, keys, num_components, num_features, assi
     This is the M-step of the CEM algorithm.
     '''
     # Calculate the weight of each component in the mixture
-    component_weights = np.array([(assignments == i).sum() for i in xrange(num_components)]) / float(len(assignments))
+    component_weights = np.array([(assignments == i).sum() for i in range(num_components)]) / float(len(assignments))
     
     # Calculate the regression coefficients and variance for each component
     coefficients = np.zeros((num_components, num_features))
     variances = np.zeros(num_components)
-    for i in xrange(num_components):
+    for i in range(num_components):
         # Get the points that are members of this component
         points = np.where(assignments == i)[0]
 
@@ -284,26 +284,26 @@ def fit_mixture(data, keys, num_components, max_iterations, stochastic=False, ve
     cur_iteration = 0
 
     if verbose:
-        print '\t\t\t\tRandomly initializing assignment weights'
+        print('\t\t\t\tRandomly initializing assignment weights')
 
     # Random initialization
     assignment_weights = np.random.uniform(size=(len(data), num_components))
     assignment_weights /= assignment_weights.sum(axis=1)[:, np.newaxis]
     
     if verbose:
-        print '\t\t\t\tSampling assignments'
+        print ('\t\t\t\tSampling assignments')
 
     # Initialize using the normal steps now
     assignments = calculate_assignments(assignment_weights, True)
 
     if verbose:
-        print '\t\t\t\tCalculating parameters'
+        print ('\t\t\t\tCalculating parameters')
 
     component_weights, coefficients, variances = maximum_likelihood_parameters(data, keys, num_components, num_features, assignments, assignment_weights)
 
     while np.abs(prev_log_likelihood - cur_log_likelihood) > threshold and cur_iteration < max_iterations:
         if verbose:
-            print '\t\t\tStarting iteration #{0}'.format(cur_iteration)
+            print ('\t\t\tStarting iteration #{0}'.format(cur_iteration))
 
         # Calculate the expectation weights
         assignment_weights = calculate_assignment_weights(data, keys, component_weights, coefficients, variances)
@@ -322,7 +322,7 @@ def fit_mixture(data, keys, num_components, max_iterations, stochastic=False, ve
         results.add_iteration(assignments, component_weights, coefficients, variances, cur_log_likelihood)
 
         if verbose:
-            print '\t\t\tLog-Likelihood: {0}'.format(cur_log_likelihood)
+            print ('\t\t\tLog-Likelihood: {0}'.format(cur_log_likelihood))
 
         cur_iteration += 1
 
@@ -359,12 +359,12 @@ def fit_with_restarts(data, keys, num_components, max_iterations, num_restarts, 
     # Fit the mixture with every restart done in parallel
     if num_workers > 1:
         pool = Pool(num_workers)
-        worker_params = [(data, keys, num_components, max_iterations, stochastic, verbose) for _ in xrange(num_restarts)]
+        worker_params = [(data, keys, num_components, max_iterations, stochastic, verbose) for _ in range(num_restarts)]
         results = pool.map(fit_worker, worker_params)
     else:
-        results = [fit_mixture(data, keys, num_components, max_iterations, stochastic=stochastic, verbose=verbose) for _ in xrange(num_restarts)]
+        results = [fit_mixture(data, keys, num_components, max_iterations, stochastic=stochastic, verbose=verbose) for _ in range(num_restarts)]
 
-    for trial in xrange(num_restarts):
+    for trial in range(num_restarts):
         result = results[trial]
 
         if max_likelihood is None or result.log_likelihoods.max() > max_likelihood:
@@ -393,7 +393,7 @@ def cross_validate(data, keys, num_folds, min_components, max_components, max_it
     # Test every fold across all possible mixture numbers
     for fold, (training_data, testing_data) in enumerate(folds):
         if verbose:
-            print '\tFold #{0} Training: {1} Testing: {2}'.format(fold, len(training_data), len(testing_data))
+            print ('\tFold #{0} Training: {1} Testing: {2}'.format(fold, len(training_data), len(testing_data)))
 
         training_keys = np.array(training_data.keys())
         testing_keys = np.array(testing_data.keys())
@@ -404,18 +404,18 @@ def cross_validate(data, keys, num_folds, min_components, max_components, max_it
             # If we're running single threaded, just build the list iteratively
             for num_components in results.components:
                 if verbose:
-                    print '\t\t{0} components'.format(num_components)
+                    print ('\t\t{0} components'.format(num_components))
 
                 component_results.append(fit_with_restarts(training_data, training_keys, num_components, max_iterations, initialization_trials, stochastic=stochastic, verbose=verbose))
         else:
             # Fit each component in parallel
             if verbose:
-                print '\t\tFitting with {0} processes'.format(num_workers)
+                print ('\t\tFitting with {0} processes'.format(num_workers))
             worker_params = [(training_data, training_keys, num_components, max_iterations, initialization_trials, stochastic, verbose) for num_components in results.components]
             component_results = pool.map(fit_with_restarts_worker, worker_params)
 
         if verbose:
-            print '\t\tTesting on out-of-sample data'
+            print ('\t\tTesting on out-of-sample data')
 
         # Test every result on out-of-sample data
         for max_result in component_results:
@@ -460,7 +460,7 @@ def load_data(filename):
             data[subset_id][1].append(y)
 
     # Convert all the lists to numpy arrays
-    for subset_id in data.iterkeys():
+    for subset_id in data.keys():
         x, y = data[subset_id]
         data[subset_id] = (np.array(x), np.array(y))
 
@@ -483,7 +483,7 @@ def save_results(results, keys, filename):
         best = results.best
     
         # Create the component rows
-        print 'component_weights: {0} coefficients: {1} variances: {2}'.format(best.component_weights.shape, best.coefficients.shape, best.variances.shape)
+        print ('component_weights: {0} coefficients: {1} variances: {2}'.format(best.component_weights.shape, best.coefficients.shape, best.variances.shape))
         rows = np.zeros((results.num_components, best.coefficients.shape[1] + 2))
         rows[:,0] = best.component_weights
         rows[:,1:1+best.coefficients.shape[1]] = best.coefficients
@@ -519,7 +519,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Load the data from file
-    print 'Loading data from {0}'.format(args.datafile)
+    print ('Loading data from {0}'.format(args.datafile))
     data = load_data(args.datafile)
 
     keys = list(data.keys())
@@ -533,11 +533,11 @@ if __name__ == '__main__':
 
     # If we don't know the number of components, do cross-validation to find them.
     if num_components is None:
-        print 'Performing {0}-fold cross-validation to find the best component count in the range [{1},{2}]'.format(args.num_folds, args.min_components, args.max_components)
+        print ('Performing {0}-fold cross-validation to find the best component count in the range [{1},{2}]'.format(args.num_folds, args.min_components, args.max_components))
         cv_results = cross_validate(data, keys, args.num_folds, args.min_components, args.max_components, args.max_iterations, stochastic=use_stochastic_em, initialization_trials=args.num_restarts, verbose=verbose, num_workers=args.num_workers)
 
         if args.plot_cross_validation is not None:
-            print 'Plotting cross-validation results to {0}'.format(args.plot_cross_validation)
+            print ('Plotting cross-validation results to {0}'.format(args.plot_cross_validation))
             cv_results.plot(args.plot_cross_validation)
 
         num_components = cv_results.best
@@ -545,11 +545,11 @@ if __name__ == '__main__':
     keys = np.array(keys)
 
     # Now we know the number of components, so just fit the finite mixture
-    print 'Fitting a mixture of {0} components with {1} restarts parallelized over {2} processes'.format(num_components, args.num_restarts, args.num_workers)
+    print ('Fitting a mixture of {0} components with {1} restarts parallelized over {2} processes'.format(num_components, args.num_restarts, args.num_workers))
     results = fit_with_restarts(data, keys, num_components, args.max_iterations, args.num_restarts, stochastic=use_stochastic_em, verbose=verbose, num_workers=args.num_workers)
     
     # Save the resulting mixture model to file, along with all the point assignments
-    print 'Saving results to {0}'.format(args.outfile)
+    print ('Saving results to {0}'.format(args.outfile))
     save_results(results, keys, args.outfile)
 
 
