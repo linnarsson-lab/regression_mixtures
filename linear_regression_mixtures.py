@@ -14,7 +14,6 @@ Author: Wesley Tansey
 Date: 5/15/2014
 '''
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 import numpy as np
